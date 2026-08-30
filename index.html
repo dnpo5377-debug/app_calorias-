@@ -3,42 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contador de Calorías</title>
-    <!-- Enlace al manifest para que PWABuilder lo reconozca -->
+    <title>Contador de Calorías y Macros</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #2c3e50; font-size: 24px; }
-        .card { background: #eef2f7; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
-        .macros { display: flex; justify-content: space-between; margin-top: 10px; }
-        .macro-item { background: white; padding: 8px; border-radius: 6px; width: 30%; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        input, button { width: 100%; padding: 10px; margin-top: 8px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background-color: #3498db; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background-color: #2980b9; }
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 450px; margin: 0 auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; font-size: 22px; margin-bottom: 15px; }
+        
+        /* Resumen principal */
+        .card-resumen { background: #2c3e50; color: white; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
+        .cal-text { font-size: 26px; font-weight: bold; margin: 5px 0; }
+        .macros-grid { display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; }
+        .macro-box { background: rgba(255,255,255,0.15); padding: 8px; border-radius: 6px; width: 30%; }
+
+        /* Tarjetas de tiempos de comida */
+        .meal-card { background: #eef2f7; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .meal-info h3 { margin: 0 0 5px 0; font-size: 16px; color: #34495e; }
+        .meal-info p { margin: 0; font-size: 12px; color: #7f8c8d; }
+        .btn-add { background-color: #3498db; color: white; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-add:hover { background-color: #2980b9; }
+
+        /* Pantallas ocultas para simular navegación */
+        .screen { display: none; }
+        .screen.active { display: block; }
+        
+        /* Estilos buscador y detalles */
+        input, select { width: 100%; padding: 10px; margin-top: 8px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        .back-btn { background: #95a5a6; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
+        .food-item { padding: 10px; background: #fff; border-bottom: 1px solid #eee; cursor: pointer; }
+        .food-item:hover { background: #f1f2f6; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Control de Calorías</h1>
-        
-        <div class="card">
-            <h3>Calorías Totales Hoy</h3>
-            <p id="total-calorias" style="font-size: 28px; font-weight: bold; margin: 5px 0;">0 / 2000 kcal</p>
-            <div class="macros">
-                <div class="macro-item">P: <span id="total-pro">0</span>g</div>
-                <div class="macro-item">C: <span id="total-carbs">0</span>g</div>
-                <div class="macro-item">G: <span id="total-grasas">0</span>g</div>
+        <!-- VISTA PRINCIPAL -->
+        <div id="main-screen" class="screen active">
+            <h1>Mi Control Diario</h1>
+            
+            <!-- Resumen de Calorías y Macros -->
+            <div class="card-resumen">
+                <div>Calorías del Día</div>
+                <div class="cal-text"><span id="calorias-consumidas">0</span> / <span id="calorias-objetivo">2000</span> kcal</div>
+                <div class="macros-grid">
+                    <div class="macro-box">Prot: <span id="pro-cons">0</span>/<span id="pro-obj">150</span>g</div>
+                    <div class="macro-box">Carbs: <span id="carb-cons">0</span>/<span id="carb-obj">200</span>g</div>
+                    <div class="macro-box">Grasas: <span id="grasa-cons">0</span>/<span id="grasa-obj">65</span>g</div>
+                </div>
+            </div>
+
+            <!-- Recuadros de Comidas -->
+            <div class="meal-card">
+                <div class="meal-info">
+                    <h3>Desayuno</h3>
+                    <p id="desc-desayuno">0 kcal</p>
+                </div>
+                <button class="btn-add" onclick="abrirBuscador('Desayuno')">+</button>
+            </div>
+
+            <div class="meal-card">
+                <div class="meal-info">
+                    <h3>Almuerzo</h3>
+                    <p id="desc-almuerzo">0 kcal</p>
+                </div>
+                <button class="btn-add" onclick="abrirBuscador('Almuerzo')">+</button>
+            </div>
+
+            <div class="meal-card">
+                <div class="meal-info">
+                    <h3>Cena</h3>
+                    <p id="desc-cena">0 kcal</p>
+                </div>
+                <button class="btn-add" onclick="abrirBuscador('Cena')">+</button>
+            </div>
+
+            <div class="meal-card">
+                <div class="meal-info">
+                    <h3>Snacks</h3>
+                    <p id="desc-snack">0 kcal</p>
+                </div>
+                <button class="btn-add" onclick="abrirBuscador('Snacks')">+</button>
             </div>
         </div>
 
-        <div class="card" style="text-align: left;">
-            <h4>Registrar Alimento</h4>
-            <input type="text" id="nombre-alimento" placeholder="Ej. Pechuga de pollo (100g)">
-            <input type="number" id="calorias-alimento" placeholder="Calorías (kcal)">
-            <input type="number" id="pro-alimento" placeholder="Proteínas (g)">
-            <button onclick="registrarAlimento()">Agregar a mi día</button>
+        <!-- VISTA BUSCADOR -->
+        <div id="search-screen" class="screen">
+            <button class="back-btn" onclick="volverPrincipal()">← Volver</button>
+            <h3 id="titulo-comida">Agregar Alimento</h3>
+            <input type="text" id="input-buscar" placeholder="Buscar alimento (ej. Pollo, Arroz)..." onkeyup="filtrarAlimentos()">
+            <div id="lista-alimentos" style="margin-top: 10px; max-height: 300px; overflow-y: auto;">
+                <!-- Aquí se cargará la lista de alimentos de la base de datos -->
+            </div>
+        </div>
+
+        <!-- VISTA DETALLE Y GRAMOS -->
+        <div id="detail-screen" class="screen">
+            <button class="back-btn" onclick="volverBuscador()">← Volver al buscador</button>
+            <h3 id=" alimento-seleccionado-nombre">Detalle del Alimento</h3>
+            <p style="font-size: 13px; color: #666;" id="info-base-100g">Valores por cada 100g</p>
+            
+            <label>Cantidad en Gramos:</label>
+            <input type="number" id="input-gramos" value="100" oninput="calcularMacrosDetalle()">
+
+            <label>Estado del alimento:</label>
+            <select id="select-estado" onchange="calcularMacrosDetalle()">
+                <option value="crudo">Crudo</option>
+                <option value="cocido">Cocido</option>
+            </select>
+
+            <div style="background: #eef2f7; padding: 10px; border-radius: 6px; margin-top: 15px;">
+                <p style="margin: 5px 0;"><strong>Calorías calculadas:</strong> <span id="calc-cal">0</span> kcal</p>
+                <p style="margin: 5px 0;"><strong>Proteínas:</strong> <span id="calc-pro">0</span> g</p>
+                <p style="margin: 5px 0;"><strong>Carbohidratos:</strong> <span id="calc-carb">0</span> g</p>
+                <p style="margin: 5px 0;"><strong>Grasas:</strong> <span id="calc-grasa">0</span> g</p>
+            </div>
+
+            <button class="btn-add" style="width: 100%; border-radius: 6px; margin-top: 15px; height: 45px;" onclick="agregarAlComsumo()">Guardar en mi día</button>
         </div>
     </div>
 
