@@ -1,15 +1,17 @@
 {
   "name": "Contador de Calorias",
   "short_name": "Calorias",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3498db",
+  "description": "Una app para llevar el control de tus calorias y macros facilmente.",
   "icons": [
     {
-      "src": "https://via.placeholder.com/512",
+      "src": "https://via.placeholder.com/512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
