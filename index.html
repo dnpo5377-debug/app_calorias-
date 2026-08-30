@@ -5,37 +5,362 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contador de Calorías y Macros</title>
     <link rel="manifest" href="manifest.json">
-    <!-- Librería externa para leer códigos de barras con la cámara -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 15px; color: #333; }
-        .container { max-width: 450px; margin: 0 auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #2c3e50; font-size: 22px; margin-bottom: 15px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9; 
+            margin: 0; 
+            padding: 15px; 
+            color: #333; 
+            min-height: 100vh;
+        }
+
+        .container { 
+            max-width: 450px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+        }
+
+        h1 { 
+            text-align: center; 
+            color: #2c3e50; 
+            font-size: 24px; 
+            margin-bottom: 20px; 
+            font-weight: bold;
+        }
+
+        h3 {
+            color: #2c3e50;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #34495e;
+            font-weight: bold;
+            margin-top: 12px;
+            margin-bottom: 5px;
+        }
         
         /* Resumen principal */
-        .card-resumen { background: #2c3e50; color: white; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
-        .cal-text { font-size: 26px; font-weight: bold; margin: 5px 0; }
-        .macros-grid { display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; }
-        .macro-box { background: rgba(255,255,255,0.15); padding: 8px; border-radius: 6px; width: 30%; }
+        .card-resumen { 
+            background: #2c3e50; 
+            color: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            text-align: center; 
+            margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+
+        .card-resumen > div:first-child {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .cal-text { 
+            font-size: 32px; 
+            font-weight: bold; 
+            margin: 10px 0; 
+        }
+
+        .macros-grid { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-top: 15px; 
+            font-size: 12px;
+            gap: 8px;
+        }
+
+        .macro-box { 
+            background: rgba(255,255,255,0.15); 
+            padding: 10px; 
+            border-radius: 6px; 
+            flex: 1;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Botón de nuevo día */
+        .btn-reset-day {
+            width: 100%;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn-reset-day:hover {
+            background: #c0392b;
+        }
 
         /* Tarjetas de tiempos de comida */
-        .meal-card { background: #eef2f7; padding: 12px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .meal-info h3 { margin: 0 0 5px 0; font-size: 16px; color: #34495e; }
-        .meal-info p { margin: 0; font-size: 12px; color: #7f8c8d; }
-        .btn-add { background-color: #3498db; color: white; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .btn-add:hover { background-color: #2980b9; }
+        .meal-card { 
+            background: #eef2f7; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            transition: background 0.2s;
+            border-left: 4px solid #3498db;
+        }
+
+        .meal-card:hover {
+            background: #e8f0f6;
+        }
+
+        .meal-info h3 { 
+            margin: 0 0 5px 0; 
+            font-size: 16px; 
+            color: #34495e;
+            font-weight: bold;
+        }
+
+        .meal-info p { 
+            margin: 0; 
+            font-size: 13px; 
+            color: #7f8c8d;
+        }
+
+        .btn-add { 
+            background-color: #3498db; 
+            color: white; 
+            border: none; 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            font-size: 20px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            transition: background 0.3s;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+
+        .btn-add:hover { 
+            background-color: #2980b9;
+            transform: scale(1.1);
+        }
 
         /* Pantallas ocultas */
-        .screen { display: none; }
-        .screen.active { display: block; }
+        .screen { 
+            display: none; 
+        }
+
+        .screen.active { 
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
         
-        input, select { width: 100%; padding: 10px; margin-top: 8px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
-        .back-btn { background: #95a5a6; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; margin-bottom: 10px; }
-        .food-item { padding: 10px; background: #fff; border-bottom: 1px solid #eee; cursor: pointer; }
-        .food-item:hover { background: #f1f2f6; }
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 8px; 
+            border-radius: 6px; 
+            border: 1px solid #ccc; 
+            box-sizing: border-box;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .back-btn { 
+            background: #95a5a6; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin-bottom: 15px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .food-item { 
+            padding: 12px; 
+            background: #fff; 
+            border-bottom: 1px solid #eee; 
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .food-item:hover { 
+            background: #f1f2f6;
+            border-left-color: #3498db;
+            padding-left: 15px;
+        }
         
-        .btn-scan { background-color: #e67e22; color: white; border: none; padding: 10px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-        .btn-scan:hover { background-color: #d35400; }
+        .btn-scan { 
+            background-color: #e67e22; 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 6px; 
+            width: 100%; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-bottom: 10px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .btn-scan:hover { 
+            background-color: #d35400;
+        }
+
+        .btn-scan:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        /* Estilos para el escáner */
+        #reader {
+            background: #000;
+            padding: 0 !important;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        #reader video {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        #reader__scan_region {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #reader__dashboard {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        #reader__dashboard_section_ctsb {
+            display: none;
+        }
+
+        .scanner-info {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            padding: 8px;
+            background: #ecf0f1;
+            border-radius: 6px;
+        }
+
+        .info-box {
+            background: #eef2f7; 
+            padding: 15px; 
+            border-radius: 6px; 
+            margin-top: 15px;
+            border-left: 4px solid #3498db;
+        }
+
+        .info-box p {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #34495e;
+        }
+
+        .info-box strong {
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .btn-guardar {
+            width: 100%; 
+            background-color: #27ae60;
+            color: white;
+            border: none; 
+            border-radius: 6px; 
+            padding: 14px;
+            margin-top: 15px; 
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-guardar:hover {
+            background-color: #229954;
+        }
+
+        .btn-guardar:active {
+            transform: scale(0.98);
+        }
+
+        /* Estilos responsivos */
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+                border-radius: 8px;
+            }
+
+            h1 {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+
+            .cal-text {
+                font-size: 28px;
+            }
+
+            .macros-grid {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .macro-box {
+                width: 100%;
+            }
+
+            .meal-card {
+                padding: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -43,21 +368,33 @@
     <div class="container">
         <!-- VISTA PRINCIPAL -->
         <div id="main-screen" class="screen active">
-            <h1>Mi Control Diario</h1>
+            <h1>📊 Mi Control Diario</h1>
+            
+            <button class="btn-reset-day" onclick="limpiarDia()">
+                🗑️ Nuevo Día
+            </button>
             
             <div class="card-resumen">
                 <div>Calorías del Día</div>
-                <div class="cal-text"><span id="calorias-consumidas">0</span> / <span id="calorias-objetivo">2000</span> kcal</div>
+                <div class="cal-text">
+                    <span id="calorias-consumidas">0</span> / 2000 kcal
+                </div>
                 <div class="macros-grid">
-                    <div class="macro-box">Prot: <span id="pro-cons">0</span>/<span id="pro-obj">150</span>g</div>
-                    <div class="macro-box">Carbs: <span id="carb-cons">0</span>/<span id="carb-obj">200</span>g</div>
-                    <div class="macro-box">Grasas: <span id="grasa-cons">0</span>/<span id="grasa-obj">65</span>g</div>
+                    <div class="macro-box">
+                        Prot: <span id="pro-cons">0</span>/150g
+                    </div>
+                    <div class="macro-box">
+                        Carbs: <span id="carb-cons">0</span>/200g
+                    </div>
+                    <div class="macro-box">
+                        Grasas: <span id="grasa-cons">0</span>/65g
+                    </div>
                 </div>
             </div>
 
             <div class="meal-card">
                 <div class="meal-info">
-                    <h3>Desayuno</h3>
+                    <h3>🌅 Desayuno</h3>
                     <p id="desc-desayuno">0 kcal</p>
                 </div>
                 <button class="btn-add" onclick="abrirBuscador('Desayuno')">+</button>
@@ -65,7 +402,7 @@
 
             <div class="meal-card">
                 <div class="meal-info">
-                    <h3>Almuerzo</h3>
+                    <h3>🍽️ Almuerzo</h3>
                     <p id="desc-almuerzo">0 kcal</p>
                 </div>
                 <button class="btn-add" onclick="abrirBuscador('Almuerzo')">+</button>
@@ -73,7 +410,7 @@
 
             <div class="meal-card">
                 <div class="meal-info">
-                    <h3>Cena</h3>
+                    <h3>🌙 Cena</h3>
                     <p id="desc-cena">0 kcal</p>
                 </div>
                 <button class="btn-add" onclick="abrirBuscador('Cena')">+</button>
@@ -81,51 +418,80 @@
 
             <div class="meal-card">
                 <div class="meal-info">
-                    <h3>Snacks</h3>
+                    <h3>🍿 Snacks</h3>
                     <p id="desc-snack">0 kcal</p>
                 </div>
                 <button class="btn-add" onclick="abrirBuscador('Snacks')">+</button>
             </div>
+
+            <button class="back-btn" style="width: 100%; background: #34495e; margin-top: 10px;" onclick="mostrarHistorial()">
+                📋 Ver Historial del Día
+            </button>
         </div>
 
         <!-- VISTA BUSCADOR Y ESCÁNER -->
         <div id="search-screen" class="screen">
             <button class="back-btn" onclick="volverPrincipal()">← Volver</button>
-            <h3 id="titulo-comida">Agregar Alimento</h3>
+            <h3>Agregar Alimento</h3>
             
-            <!-- Botón para activar la cámara del celular -->
-            <button class="btn-scan" onclick="iniciarEscaner()">📷 Escanear Código de Barras</button>
+            <button class="btn-scan" onclick="iniciarEscaner()">
+                📷 Escanear Código de Barras
+            </button>
             
-            <!-- Contenedor donde aparecerá la cámara -->
-            <div id="reader" style="width: 100%; margin-bottom: 10px;"></div>
+            <button class="btn-scan" style="background: #e74c3c;" onclick="detenerEscaner()">
+                ⛔ Detener Escáner
+            </button>
+            
+            <div id="reader" style="width: 100%;"></div>
 
-            <input type="text" id="input-buscar" placeholder="Buscar alimento (ej. Pollo, Avena)..." onkeyup="filtrarAlimentos()">
+            <div class="scanner-info">
+                💡 Acerca el código de barras a la cámara
+            </div>
+
+            <input type="text" id="input-buscar" placeholder="Buscar alimento..." onkeyup="filtrarAlimentos()">
+            
             <div id="lista-alimentos" style="margin-top: 10px; max-height: 250px; overflow-y: auto;"></div>
         </div>
 
         <!-- VISTA DETALLE Y GRAMOS -->
         <div id="detail-screen" class="screen">
             <button class="back-btn" onclick="volverBuscador()">← Volver al buscador</button>
-            <h3 id="alimento-seleccionado-nombre">Detalle del Alimento</h3>
-            <p style="font-size: 13px; color: #666;">Valores por cada 100g</p>
+            <h3>Detalle del Alimento</h3>
+            <p style="font-size: 13px; color: #666;">Valores nutricionales por cada 100g</p>
             
             <label>Cantidad en Gramos:</label>
-            <input type="number" id="input-gramos" value="100" oninput="calcularMacrosDetalle()">
+            <input type="number" id="input-gramos" value="100">
 
             <label>Estado del alimento:</label>
-            <select id="select-estado" onchange="calcularMacrosDetalle()">
+            <select id="select-estado">
                 <option value="crudo">Crudo</option>
                 <option value="cocido">Cocido</option>
+                <option value="asado">Asado</option>
+                <option value="frito">Frito</option>
             </select>
 
-            <div style="background: #eef2f7; padding: 10px; border-radius: 6px; margin-top: 15px;">
-                <p style="margin: 5px 0;"><strong>Calorías calculadas:</strong> <span id="calc-cal">0</span> kcal</p>
-                <p style="margin: 5px 0;"><strong>Proteínas:</strong> <span id="calc-pro">0</span> g</p>
-                <p style="margin: 5px 0;"><strong>Carbohidratos:</strong> <span id="calc-carb">0</span> g</p>
-                <p style="margin: 5px 0;"><strong>Grasas:</strong> <span id="calc-grasa">0</span> g</p>
+            <div class="info-box">
+                <p>
+                    Calorías calculadas: 
+                    <span id="calc-cal">0</span> kcal
+                </p>
+                <p>
+                    Proteínas: 
+                    <span id="calc-pro">0</span> g
+                </p>
+                <p>
+                    Carbohidratos: 
+                    <span id="calc-carb">0</span> g
+                </p>
+                <p>
+                    Grasas: 
+                    <span id="calc-grasa">0</span> g
+                </p>
             </div>
 
-            <button class="btn-add" style="width: 100%; border-radius: 6px; margin-top: 15px; height: 45px;" onclick="agregarAlComsumo()">Guardar en mi día</button>
+            <button class="btn-guardar" onclick="agregarAlComsumo()">
+                ✅ Guardar en mi día
+            </button>
         </div>
     </div>
 
