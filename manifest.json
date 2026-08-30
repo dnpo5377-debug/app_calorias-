@@ -5,10 +5,10 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3498db",
-  "description": "Una app para llevar el control de tus calorias y macros facilmente.",
+  "description": "Una aplicación móvil para llevar el control de tus calorías y macros fácilmente.",
   "icons": [
     {
-      "src": "https://via.placeholder.com/512.png",
+      "src": "https://raw.githubusercontent.com/atomic-variable/awesome-json-datasets/master/foods.json",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
