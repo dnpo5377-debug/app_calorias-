@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contador de Calorías y Macros</title>
     <link rel="manifest" href="manifest.json">
+    
+    <!-- Librería externa para leer códigos de barras -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
+    <!-- Librería opcional para reconocimiento OCR de etiquetas (Tesseract.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -250,6 +256,18 @@
             cursor: not-allowed;
         }
 
+        /* Contenedor de botones de escáner */
+        .scanner-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .scanner-buttons .btn-scan {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
         /* Estilos para el escáner */
         #reader {
             background: #000;
@@ -330,6 +348,23 @@
 
         .btn-guardar:active {
             transform: scale(0.98);
+        }
+
+        .btn-historial {
+            width: 100%;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .btn-historial:hover {
+            background: #2980b9;
         }
 
         /* Estilos responsivos */
@@ -432,12 +467,16 @@
         <!-- VISTA BUSCADOR Y ESCÁNER -->
         <div id="search-screen" class="screen">
             <button class="back-btn" onclick="volverPrincipal()">← Volver</button>
-            <h3>Agregar Alimento</h3>
+            <h3 id="titulo-comida">Agregar Alimento</h3>
             
-            <button class="btn-scan" onclick="iniciarEscaner()">
-                📷 Escanear Código de Barras
-            </button>
+            <div class="scanner-buttons">
+                <button class="btn-scan" onclick="iniciarEscaner()">📷 Escanear Código</button>
+                <button class="btn-scan" style="background: #8e44ad;" onclick="document.getElementById('input-foto-etiqueta').click()">🏷️ Foto Etiqueta</button>
+            </div>
             
+            <!-- Input oculto para recibir la foto de la etiqueta -->
+            <input type="file" id="input-foto-etiqueta" accept="image/*" style="display: none;" onchange="procesarFotoEtiqueta(this)">
+
             <button class="btn-scan" style="background: #e74c3c;" onclick="detenerEscaner()">
                 ⛔ Detener Escáner
             </button>
@@ -445,7 +484,7 @@
             <div id="reader" style="width: 100%;"></div>
 
             <div class="scanner-info">
-                💡 Acerca el código de barras a la cámara
+                💡 Acerca el código de barras o toma foto a la tabla nutricional
             </div>
 
             <input type="text" id="input-buscar" placeholder="Buscar alimento..." onkeyup="filtrarAlimentos()">
@@ -456,7 +495,7 @@
         <!-- VISTA DETALLE Y GRAMOS -->
         <div id="detail-screen" class="screen">
             <button class="back-btn" onclick="volverBuscador()">← Volver al buscador</button>
-            <h3>Detalle del Alimento</h3>
+            <h3 id="alimento-seleccionado-nombre">Detalle del Alimento</h3>
             <p style="font-size: 13px; color: #666;">Valores nutricionales por cada 100g</p>
             
             <label>Cantidad en Gramos:</label>
@@ -495,6 +534,7 @@
         </div>
     </div>
 
+    <!-- Enlace al archivo de lógica app.js -->
     <script src="app.js"></script>
 </body>
 </html>
