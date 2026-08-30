@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contador de Calorías</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; font-size: 24px; }
+        .card { background: #eef2f7; padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
+        .macros { display: flex; justify-content: space-between; margin-top: 10px; }
+        .macro-item { background: white; padding: 8px; border-radius: 6px; width: 30%; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        input, button { width: 100%; padding: 10px; margin-top: 8px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background-color: #3498db; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #2980b9; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Control de Calorías</h1>
+        
+        <div class="card">
+            <h3>Calorías Totales Hoy</h3>
+            <p id="total-calorias" style="font-size: 28px; font-weight: bold; margin: 5px 0;">0 / 2000 kcal</p>
+            <div class="macros">
+                <div class="macro-item">P: <span id="total-pro">0</span>g</div>
+                <div class="macro-item">C: <span id="total-carbs">0</span>g</div>
+                <div class="macro-item">G: <span id="total-grasas">0</span>g</div>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: left;">
+            <h4>Registrar Alimento</h4>
+            <input type="text" id="nombre-alimento" placeholder="Ej. Pechuga de pollo (100g)">
+            <input type="number" id="calorias-alimento" placeholder="Calorías (kcal)">
+            <input type="number" id="pro-alimento" placeholder="Proteínas (g)">
+            <button onclick="registrarAlimento()">Agregar a mi día</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
