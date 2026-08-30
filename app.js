@@ -57,6 +57,10 @@ let historialAlimentos = [];
 let comidaActual = "";
 let alimentoSeleccionado = null;
 
+// Variables del escáner
+let htmlQrcodeScanner;
+let escánerActivo = false;
+
 // ============================================================
 // FUNCIONES DE ALMACENAMIENTO EN LOCALSTORAGE
 // ============================================================
@@ -146,12 +150,22 @@ function abrirBuscador(tipoComida) {
     document.getElementById('search-screen').classList.add('active');
     document.getElementById('input-buscar').value = '';
     mostrarListaAlimentos(baseDeDatosAlimentos);
+    
+    // Limpiar escáner si está activo
+    if (escánerActivo) {
+        detenerEscaner();
+    }
 }
 
 /**
  * Volver a la pantalla principal
  */
 function volverPrincipal() {
+    // Detener escáner si está activo
+    if (escánerActivo) {
+        detenerEscaner();
+    }
+    
     document.getElementById('search-screen').classList.remove('active');
     document.getElementById('detail-screen').classList.remove('active');
     document.getElementById('main-screen').classList.add('active');
@@ -335,14 +349,160 @@ function actualizarPantallaResumen() {
 }
 
 // ============================================================
-// FUNCIÓN DE ESCÁNER (Placeholder - para futura implementación)
+// FUNCIONES DE ESCÁNER DE CÓDIGO DE BARRAS
 // ============================================================
 
 /**
  * Iniciar escáner de código de barras
  */
 function iniciarEscaner() {
-    alert("📷 Función de escáner en desarrollo.\n\nActualmente puedes buscar el alimento manualmente en la lista.");
+    const readerDiv = document.getElementById('reader');
+    
+    // Si ya está activo, detenerlo
+    if (escánerActivo) {
+        detenerEscaner();
+        return;
+    }
+
+    escánerActivo = true;
+    readerDiv.innerHTML = ''; // Limpiar div
+    
+    // Mostrar/ocultar botones
+    const btnEscaner = document.getElementById('btn-escaner');
+    const btnDetener = document.getElementById('btn-detener-escaner');
+    if (btnEscaner) btnEscaner.style.display = 'none';
+    if (btnDetener) btnDetener.style.display = 'block';
+    
+    // Crear instancia del escáner
+    htmlQrcodeScanner = new Html5QrcodeScanner(
+        "reader",
+        { 
+            fps: 10,
+            qrbox: { width: 250, height: 250},
+            aspectRatio: 1.0
+        },
+        false // verbose
+    );
+
+    // Definir qué hacer cuando detecta un código
+    htmlQrcodeScanner.render(onScanSuccess, onScanError);
+
+    console.log('📷 Escáner iniciado');
+}
+
+/**
+ * Función que se ejecuta cuando detecta un código QR/Código de barras
+ */
+function onScanSuccess(decodedText, decodedResult) {
+    console.log(`✅ Código detectado: ${decodedText}`);
+    
+    // Buscar alimento por código de barras
+    buscarAlimentoPorCodigo(decodedText);
+}
+
+/**
+ * Función para manejar errores del escáner
+ */
+function onScanError(error) {
+    // Ignorar errores de lectura continuos
+    console.log(`📷 Buscando código de barras...`);
+}
+
+/**
+ * Buscar alimento por código de barras
+ */
+function buscarAlimentoPorCodigo(codigoBarras) {
+    // Base de datos de códigos de barras (ejemplo)
+    const codigosAlimentos = {
+        '7613035315098': 'Avena',
+        '8480013005180': 'Arroz Blanco Cocido',
+        '5000159523017': 'Pan Hallulla',
+        '8480013013066': 'Pechuga de Pollo',
+        '5010032014159': 'Huevo Entero',
+        '5000152406534': 'Leche Desnatada',
+        '5060035132652': 'Plátano',
+        '5000159523024': 'Salmón Cocido',
+        '5449000131805': 'Coca Cola',
+        '7622210449283': 'Nesquik'
+    };
+
+    // Buscar en la base de datos local
+    const alimento = codigosAlimentos[codigoBarras];
+
+    if (alimento) {
+        // Buscar el alimento en nuestra base de datos
+        const alimentoEncontrado = baseDeDatosAlimentos.find(a => 
+            a.nombre.toLowerCase().includes(alimento.toLowerCase())
+        );
+
+        if (alimentoEncontrado) {
+            detenerEscaner();
+            seleccionarAlimento(alimentoEncontrado);
+            console.log(`🎉 Alimento encontrado: ${alimentoEncontrado.nombre}`);
+            alert(`✅ ¡Encontrado!\n${alimentoEncontrado.nombre}`);
+        } else {
+            alert(`❌ El alimento "${alimento}" no está en nuestra base de datos`);
+        }
+    } else {
+        // Si no está en la base de datos local, intentar con API
+        console.log('🔍 Buscando en base de datos internacional...');
+        buscarAlimentoPorCodigoAPI(codigoBarras);
+    }
+}
+
+/**
+ * Detener el escáner
+ */
+function detenerEscaner() {
+    if (escánerActivo && htmlQrcodeScanner) {
+        htmlQrcodeScanner.clear();
+        document.getElementById('reader').innerHTML = '';
+        escánerActivo = false;
+        
+        // Mostrar/ocultar botones
+        const btnEscaner = document.getElementById('btn-escaner');
+        const btnDetener = document.getElementById('btn-detener-escaner');
+        if (btnEscaner) btnEscaner.style.display = 'block';
+        if (btnDetener) btnDetener.style.display = 'none';
+        
+        console.log('⛔ Escáner detenido');
+    }
+}
+
+/**
+ * Buscar alimento usando API de Open Food Facts
+ */
+async function buscarAlimentoPorCodigoAPI(codigoBarras) {
+    try {
+        const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigoBarras}.json`);
+        const data = await response.json();
+
+        if (data.status === 1) {
+            const nombreProducto = data.product.product_name;
+            console.log(`✅ Producto encontrado: ${nombreProducto}`);
+            
+            // Buscar si existe en nuestra base de datos por nombre similar
+            const palabrasClave = nombreProducto.toLowerCase().split(' ');
+            const alimentoEncontrado = baseDeDatosAlimentos.find(a => {
+                const nombreAlimento = a.nombre.toLowerCase();
+                return palabrasClave.some(palabra => nombreAlimento.includes(palabra));
+            });
+
+            if (alimentoEncontrado) {
+                detenerEscaner();
+                seleccionarAlimento(alimentoEncontrado);
+                alert(`✅ ¡Encontrado!\n${alimentoEncontrado.nombre}`);
+            } else {
+                detenerEscaner();
+                alert(`ℹ️ Producto encontrado: ${nombreProducto}\n\nPero no tenemos datos nutricionales en nuestra base de datos.\n\nPuedes agregarlo manualmente.`);
+            }
+        } else {
+            alert(`⚠️ Código de barras no reconocido: ${codigoBarras}\n\nProduto no encontrado en la base de datos internacional`);
+        }
+    } catch (error) {
+        console.error('Error al consultar API:', error);
+        alert('⚠️ Error de conexión al buscar el código de barras.\n\nIntenta de nuevo o busca manualmente.');
+    }
 }
 
 // ============================================================
