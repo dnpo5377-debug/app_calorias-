@@ -55,11 +55,24 @@ function mostrarListaAlimentos(lista) {
     const contenedor = document.getElementById('lista-alimentos');
     contenedor.innerHTML = '';
     
-    lista.forEach((alimento, index) => {
+    if (lista.length === 0) {
+        contenedor.innerHTML = '<p style="text-align:center; color:#888; padding:10px;">No se encontró el alimento</p>';
+        return;
+    }
+
+    lista.forEach((alimento) => {
         const item = document.createElement('div');
         item.className = 'food-item';
+        item.style.padding = "10px";
+        item.style.borderBottom = "1px solid #eee";
+        item.style.cursor = "pointer";
         item.innerHTML = `<strong>${alimento.nombre}</strong> <br><small style="color: #666;">${alimento.cal} kcal | P: ${alimento.pro}g | C: ${alimento.carb}g | G: ${alimento.grasa}g (por 100g)</small>`;
-        item.onclick = () => seleccionarAlimento(alimento);
+        
+        // Evento directo al hacer clic o tocar en el celular
+        item.onclick = function() {
+            seleccionarAlimento(alimento);
+        };
+        
         contenedor.appendChild(item);
     });
 }
@@ -87,15 +100,7 @@ function calcularMacrosDetalle() {
     if (!alimentoSeleccionado) return;
     
     const gramos = parseFloat(document.getElementById('input-gramos').value) || 0;
-    const estado = document.getElementById('select-estado').value;
-    
     let multiplicadorFactor = gramos / 100;
-
-    // Ajuste simple opcional si se selecciona cocido (ej. arroz absorbe agua, carne reduce peso)
-    if (alimentoSeleccionado.nombre.includes("Arroz") && estado === "cocido") {
-        // Factor orientativo si ingresan gramos ya cocidos
-        multiplicadorFactor = gramos / 100; 
-    }
 
     const calCalc = Math.round(alimentoSeleccionado.cal * multiplicadorFactor);
     const proCalc = (alimentoSeleccionado.pro * multiplicadorFactor).toFixed(1);
@@ -110,10 +115,10 @@ function calcularMacrosDetalle() {
 
 // Guardar el alimento en el consumo diario
 function agregarAlComsumo() {
-    const cal = parseFloat(document.getElementById('calc-cal').innerText);
-    const pro = parseFloat(document.getElementById('calc-pro').innerText);
-    const carb = parseFloat(document.getElementById('calc-carb').innerText);
-    const grasa = parseFloat(document.getElementById('calc-grasa').innerText);
+    const cal = parseFloat(document.getElementById('calc-cal').innerText) || 0;
+    const pro = parseFloat(document.getElementById('calc-pro').innerText) || 0;
+    const carb = parseFloat(document.getElementById('calc-carb').innerText) || 0;
+    const grasa = parseFloat(document.getElementById('calc-grasa').innerText) || 0;
 
     // Sumar a totales del día
     totalesDia.calorias += cal;
@@ -130,7 +135,7 @@ function agregarAlComsumo() {
     document.getElementById('carb-cons').innerText = Math.round(totalesDia.carbs);
     document.getElementById('grasa-cons').innerText = Math.round(totalesDia.grasas);
 
-    // Actualizar texto del recuadro de comida (ej. Desayuno)
+    // Actualizar texto del recuadro de comida
     let idTexto = "";
     if (comidaActual === "Desayuno") idTexto = "desc-desayuno";
     if (comidaActual === "Almuerzo") idTexto = "desc-almuerzo";
