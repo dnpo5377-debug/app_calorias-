@@ -34,7 +34,6 @@ let totalesDia = {
     grasas: 0
 };
 
-// Objetivos diarios (personalizables)
 let objetivosDiarios = {
     calorias: 2000,
     proteinas: 150,
@@ -42,7 +41,6 @@ let objetivosDiarios = {
     grasas: 65
 };
 
-// Control de calorías por tiempo de comida
 let caloriasComidas = {
     Desayuno: 0,
     Almuerzo: 0,
@@ -50,10 +48,7 @@ let caloriasComidas = {
     Snacks: 0
 };
 
-// Historial de alimentos
 let historialAlimentos = [];
-
-// Variables de estado
 let comidaActual = "";
 let alimentoSeleccionado = null;
 
@@ -61,13 +56,13 @@ let alimentoSeleccionado = null;
 let htmlQrcodeScanner;
 let escánerActivo = false;
 
+// Variables de OCR
+let ocrWorker;
+
 // ============================================================
 // FUNCIONES DE ALMACENAMIENTO EN LOCALSTORAGE
 // ============================================================
 
-/**
- * Guardar todos los datos en el navegador
- */
 function guardarDatos() {
     localStorage.setItem('totalesDia', JSON.stringify(totalesDia));
     localStorage.setItem('caloriasComidas', JSON.stringify(caloriasComidas));
@@ -76,21 +71,16 @@ function guardarDatos() {
     console.log('✅ Datos guardados correctamente');
 }
 
-/**
- * Cargar datos del localStorage
- */
 function cargarDatos() {
     const fechaGuardada = localStorage.getItem('fechaActual');
     const fechaActual = new Date().toDateString();
     
-    // Si pasó un día, limpiar todo
     if (fechaGuardada !== fechaActual) {
         console.log('📅 Nuevo día detectado - Limpiando datos anteriores');
         limpiarDia();
         return;
     }
     
-    // Cargar datos guardados
     const totales = localStorage.getItem('totalesDia');
     const comidas = localStorage.getItem('caloriasComidas');
     const historial = localStorage.getItem('historialAlimentos');
@@ -103,9 +93,6 @@ function cargarDatos() {
     actualizarPantallaResumen();
 }
 
-/**
- * Limpiar todo el día
- */
 function limpiarDia() {
     totalesDia = { calorias: 0, proteinas: 0, carbs: 0, grasas: 0 };
     caloriasComidas = { Desayuno: 0, Almuerzo: 0, Cena: 0, Snacks: 0 };
@@ -116,9 +103,6 @@ function limpiarDia() {
     console.log('🗑️ Día limpiado correctamente');
 }
 
-/**
- * Mostrar historial de alimentos del día
- */
 function mostrarHistorial() {
     if (historialAlimentos.length === 0) {
         alert('📭 No hay alimentos registrados aún');
@@ -136,45 +120,53 @@ function mostrarHistorial() {
     alert(mensaje);
 }
 
+function cargarAlimentosPersonalizados() {
+    const alimentosGuardados = localStorage.getItem('alimentosCustom');
+    if (alimentosGuardados) {
+        const alimentos = JSON.parse(alimentosGuardados);
+        baseDeDatosAlimentos.push(...alimentos);
+        console.log(`✅ ${alimentos.length} alimentos personalizados cargados`);
+    }
+}
+
 // ============================================================
 // FUNCIONES DE NAVEGACIÓN ENTRE PANTALLAS
 // ============================================================
 
-/**
- * Abrir buscador de alimentos
- */
 function abrirBuscador(tipoComida) {
     comidaActual = tipoComida;
     document.getElementById('titulo-comida').innerText = `Agregar a ${tipoComida}`;
     document.getElementById('main-screen').classList.remove('active');
     document.getElementById('search-screen').classList.add('active');
     document.getElementById('input-buscar').value = '';
-    mostrarListaAlimentos(baseDeDatosAlimentos);
     
-    // Limpiar escáner si está activo
     if (escánerActivo) {
         detenerEscaner();
     }
+    
+    const readerDiv = document.getElementById('reader');
+    if (readerDiv) readerDiv.innerHTML = '';
+    
+    mostrarListaAlimentos(baseDeDatosAlimentos);
 }
 
-/**
- * Volver a la pantalla principal
- */
 function volverPrincipal() {
-    // Detener escáner si está activo
     if (escánerActivo) {
         detenerEscaner();
     }
+    cancelarCapturaEtiqueta();
     
     document.getElementById('search-screen').classList.remove('active');
     document.getElementById('detail-screen').classList.remove('active');
     document.getElementById('main-screen').classList.add('active');
 }
 
-/**
- * Volver al buscador desde detalle
- */
 function volverBuscador() {
+    if (escánerActivo) {
+        detenerEscaner();
+    }
+    cancelarCapturaEtiqueta();
+    
     document.getElementById('detail-screen').classList.remove('active');
     document.getElementById('search-screen').classList.add('active');
 }
@@ -183,9 +175,6 @@ function volverBuscador() {
 // FUNCIONES DEL BUSCADOR Y FILTRADO
 // ============================================================
 
-/**
- * Mostrar lista de alimentos en el buscador
- */
 function mostrarListaAlimentos(lista) {
     const contenedor = document.getElementById('lista-alimentos');
     contenedor.innerHTML = '';
@@ -198,7 +187,7 @@ function mostrarListaAlimentos(lista) {
     lista.forEach((alimento) => {
         const item = document.createElement('div');
         item.className = 'food-item';
-        item.style.padding = "10px";
+        item.style.padding = "12px";
         item.style.borderBottom = "1px solid #eee";
         item.style.cursor = "pointer";
         item.style.transition = "background 0.2s";
@@ -210,11 +199,9 @@ function mostrarListaAlimentos(lista) {
             </small>
         `;
         
-        // Efecto hover
         item.onmouseover = () => item.style.background = '#f1f2f6';
         item.onmouseout = () => item.style.background = 'transparent';
         
-        // Click para seleccionar
         item.onclick = function() {
             seleccionarAlimento(alimento);
         };
@@ -223,9 +210,6 @@ function mostrarListaAlimentos(lista) {
     });
 }
 
-/**
- * Filtrar alimentos por búsqueda
- */
 function filtrarAlimentos() {
     const texto = document.getElementById('input-buscar').value.toLowerCase().trim();
     
@@ -245,9 +229,6 @@ function filtrarAlimentos() {
 // FUNCIONES DE DETALLE DE ALIMENTO
 // ============================================================
 
-/**
- * Seleccionar alimento para ir al detalle
- */
 function seleccionarAlimento(alimento) {
     alimentoSeleccionado = alimento;
     document.getElementById('alimento-seleccionado-nombre').innerText = alimento.nombre;
@@ -259,9 +240,6 @@ function seleccionarAlimento(alimento) {
     calcularMacrosDetalle();
 }
 
-/**
- * Calcular macros dinámicamente según gramos
- */
 function calcularMacrosDetalle() {
     if (!alimentoSeleccionado) return;
     
@@ -283,25 +261,19 @@ function calcularMacrosDetalle() {
 // FUNCIONES DE GUARDADO
 // ============================================================
 
-/**
- * Agregar alimento al consumo diario
- */
 function agregarAlComsumo() {
     const cal = parseFloat(document.getElementById('calc-cal').innerText) || 0;
     const pro = parseFloat(document.getElementById('calc-pro').innerText) || 0;
     const carb = parseFloat(document.getElementById('calc-carb').innerText) || 0;
     const grasa = parseFloat(document.getElementById('calc-grasa').innerText) || 0;
 
-    // Sumar a totales del día
     totalesDia.calorias += cal;
     totalesDia.proteinas += pro;
     totalesDia.carbs += carb;
     totalesDia.grasas += grasa;
 
-    // Sumar al tiempo de comida correspondiente
     caloriasComidas[comidaActual] += cal;
 
-    // Guardar en historial
     historialAlimentos.push({
         nombre: alimentoSeleccionado.nombre,
         comida: comidaActual,
@@ -310,10 +282,7 @@ function agregarAlComsumo() {
         timestamp: new Date().getTime()
     });
 
-    // Guardar en localStorage
     guardarDatos();
-
-    // Actualizar pantalla
     actualizarPantallaResumen();
     
     console.log(`✅ ${alimentoSeleccionado.nombre} agregado a ${comidaActual}`);
@@ -321,30 +290,26 @@ function agregarAlComsumo() {
     volverPrincipal();
 }
 
-/**
- * Actualizar la pantalla de resumen
- */
 function actualizarPantallaResumen() {
-    // Actualizar totales del día
     document.getElementById('calorias-consumidas').innerText = Math.round(totalesDia.calorias);
     document.getElementById('pro-cons').innerText = Math.round(totalesDia.proteinas);
     document.getElementById('carb-cons').innerText = Math.round(totalesDia.carbs);
     document.getElementById('grasa-cons').innerText = Math.round(totalesDia.grasas);
 
-    // Actualizar cada comida
     document.getElementById('desc-desayuno').innerText = `${Math.round(caloriasComidas.Desayuno)} kcal`;
     document.getElementById('desc-almuerzo').innerText = `${Math.round(caloriasComidas.Almuerzo)} kcal`;
     document.getElementById('desc-cena').innerText = `${Math.round(caloriasComidas.Cena)} kcal`;
     document.getElementById('desc-snack').innerText = `${Math.round(caloriasComidas.Snacks)} kcal`;
 
-    // Cambiar color de fondo si se excede el objetivo
     const cardResumen = document.querySelector('.card-resumen');
-    if (totalesDia.calorias > objetivosDiarios.calorias) {
-        cardResumen.style.background = '#e74c3c';
-    } else if (totalesDia.calorias > objetivosDiarios.calorias * 0.9) {
-        cardResumen.style.background = '#f39c12';
-    } else {
-        cardResumen.style.background = '#2c3e50';
+    if (cardResumen) {
+        if (totalesDia.calorias > objetivosDiarios.calorias) {
+            cardResumen.style.background = '#e74c3c';
+        } else if (totalesDia.calorias > objetivosDiarios.calorias * 0.9) {
+            cardResumen.style.background = '#f39c12';
+        } else {
+            cardResumen.style.background = '#2c3e50';
+        }
     }
 }
 
@@ -352,28 +317,22 @@ function actualizarPantallaResumen() {
 // FUNCIONES DE ESCÁNER DE CÓDIGO DE BARRAS
 // ============================================================
 
-/**
- * Iniciar escáner de código de barras
- */
 function iniciarEscaner() {
     const readerDiv = document.getElementById('reader');
     
-    // Si ya está activo, detenerlo
     if (escánerActivo) {
         detenerEscaner();
         return;
     }
 
     escánerActivo = true;
-    readerDiv.innerHTML = ''; // Limpiar div
+    readerDiv.innerHTML = '';
     
-    // Mostrar/ocultar botones
     const btnEscaner = document.getElementById('btn-escaner');
     const btnDetener = document.getElementById('btn-detener-escaner');
     if (btnEscaner) btnEscaner.style.display = 'none';
     if (btnDetener) btnDetener.style.display = 'block';
     
-    // Crear instancia del escáner
     htmlQrcodeScanner = new Html5QrcodeScanner(
         "reader",
         { 
@@ -381,85 +340,34 @@ function iniciarEscaner() {
             qrbox: { width: 250, height: 250},
             aspectRatio: 1.0
         },
-        false // verbose
+        false
     );
 
-    // Definir qué hacer cuando detecta un código
     htmlQrcodeScanner.render(onScanSuccess, onScanError);
 
     console.log('📷 Escáner iniciado');
 }
 
-/**
- * Función que se ejecuta cuando detecta un código QR/Código de barras
- */
 function onScanSuccess(decodedText, decodedResult) {
     console.log(`✅ Código detectado: ${decodedText}`);
-    
-    // Buscar alimento por código de barras
     buscarAlimentoPorCodigo(decodedText);
 }
 
-/**
- * Función para manejar errores del escáner
- */
 function onScanError(error) {
-    // Ignorar errores de lectura continuos
     console.log(`📷 Buscando código de barras...`);
 }
 
-/**
- * Buscar alimento por código de barras
- */
 function buscarAlimentoPorCodigo(codigoBarras) {
-    // Base de datos de códigos de barras (ejemplo)
-    const codigosAlimentos = {
-        '7613035315098': 'Avena',
-        '8480013005180': 'Arroz Blanco Cocido',
-        '5000159523017': 'Pan Hallulla',
-        '8480013013066': 'Pechuga de Pollo',
-        '5010032014159': 'Huevo Entero',
-        '5000152406534': 'Leche Desnatada',
-        '5060035132652': 'Plátano',
-        '5000159523024': 'Salmón Cocido',
-        '5449000131805': 'Coca Cola',
-        '7622210449283': 'Nesquik'
-    };
-
-    // Buscar en la base de datos local
-    const alimento = codigosAlimentos[codigoBarras];
-
-    if (alimento) {
-        // Buscar el alimento en nuestra base de datos
-        const alimentoEncontrado = baseDeDatosAlimentos.find(a => 
-            a.nombre.toLowerCase().includes(alimento.toLowerCase())
-        );
-
-        if (alimentoEncontrado) {
-            detenerEscaner();
-            seleccionarAlimento(alimentoEncontrado);
-            console.log(`🎉 Alimento encontrado: ${alimentoEncontrado.nombre}`);
-            alert(`✅ ¡Encontrado!\n${alimentoEncontrado.nombre}`);
-        } else {
-            alert(`❌ El alimento "${alimento}" no está en nuestra base de datos`);
-        }
-    } else {
-        // Si no está en la base de datos local, intentar con API
-        console.log('🔍 Buscando en base de datos internacional...');
-        buscarAlimentoPorCodigoAPI(codigoBarras);
-    }
+    detenerEscaner();
+    alert(`⚠️ Código de barras: ${codigoBarras}\n\nNo encontrado en la base de datos local.\n\n¿Quieres tomar una foto de la etiqueta nutricional?`);
 }
 
-/**
- * Detener el escáner
- */
 function detenerEscaner() {
     if (escánerActivo && htmlQrcodeScanner) {
         htmlQrcodeScanner.clear();
         document.getElementById('reader').innerHTML = '';
         escánerActivo = false;
         
-        // Mostrar/ocultar botones
         const btnEscaner = document.getElementById('btn-escaner');
         const btnDetener = document.getElementById('btn-detener-escaner');
         if (btnEscaner) btnEscaner.style.display = 'block';
@@ -469,56 +377,382 @@ function detenerEscaner() {
     }
 }
 
-/**
- * Buscar alimento usando API de Open Food Facts
- */
-async function buscarAlimentoPorCodigoAPI(codigoBarras) {
-    try {
-        const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${codigoBarras}.json`);
-        const data = await response.json();
+// ============================================================
+// FUNCIONES OCR Y CAPTURA DE ETIQUETA NUTRICIONAL
+// ============================================================
 
-        if (data.status === 1) {
-            const nombreProducto = data.product.product_name;
-            console.log(`✅ Producto encontrado: ${nombreProducto}`);
-            
-            // Buscar si existe en nuestra base de datos por nombre similar
-            const palabrasClave = nombreProducto.toLowerCase().split(' ');
-            const alimentoEncontrado = baseDeDatosAlimentos.find(a => {
-                const nombreAlimento = a.nombre.toLowerCase();
-                return palabrasClave.some(palabra => nombreAlimento.includes(palabra));
-            });
+let videoElement;
+let canvasElement;
+let capturaActiva = false;
 
-            if (alimentoEncontrado) {
-                detenerEscaner();
-                seleccionarAlimento(alimentoEncontrado);
-                alert(`✅ ¡Encontrado!\n${alimentoEncontrado.nombre}`);
-            } else {
-                detenerEscaner();
-                alert(`ℹ️ Producto encontrado: ${nombreProducto}\n\nPero no tenemos datos nutricionales en nuestra base de datos.\n\nPuedes agregarlo manualmente.`);
-            }
-        } else {
-            alert(`⚠️ Código de barras no reconocido: ${codigoBarras}\n\nProduto no encontrado en la base de datos internacional`);
-        }
-    } catch (error) {
-        console.error('Error al consultar API:', error);
-        alert('⚠️ Error de conexión al buscar el código de barras.\n\nIntenta de nuevo o busca manualmente.');
+function inicializarOCR() {
+    if (typeof Tesseract === 'undefined') {
+        alert('⚠️ Error: Librería OCR no cargada.');
+        return false;
     }
+    
+    const { createWorker } = Tesseract;
+    
+    createWorker('spa').then(worker => {
+        ocrWorker = worker;
+        console.log('✅ OCR inicializado correctamente');
+    }).catch(error => {
+        console.error('❌ Error al inicializar OCR:', error);
+        alert('⚠️ Error al cargar el sistema de OCR');
+    });
+    
+    return true;
+}
+
+function iniciarCapturaEtiqueta() {
+    console.log('📸 Iniciando captura de etiqueta...');
+    
+    const readerDiv = document.getElementById('reader');
+    readerDiv.innerHTML = '';
+    readerDiv.style.background = '#000';
+    
+    videoElement = document.createElement('video');
+    videoElement.style.width = '100%';
+    videoElement.style.height = 'auto';
+    videoElement.autoplay = true;
+    videoElement.playsinline = true;
+    
+    canvasElement = document.createElement('canvas');
+    canvasElement.style.display = 'none';
+    
+    readerDiv.appendChild(videoElement);
+    readerDiv.appendChild(canvasElement);
+    
+    navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' },
+        audio: false 
+    })
+    .then(stream => {
+        videoElement.srcObject = stream;
+        capturaActiva = true;
+        crearBotonesCapturaEtiqueta();
+        console.log('✅ Cámara iniciada para captura de etiqueta');
+    })
+    .catch(error => {
+        console.error('❌ Error al acceder a cámara:', error);
+        alert('⚠️ No se pudo acceder a la cámara.');
+    });
+}
+
+function crearBotonesCapturaEtiqueta() {
+    const readerDiv = document.getElementById('reader');
+    
+    const botonesDiv = document.createElement('div');
+    botonesDiv.style.cssText = `
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        justify-content: center;
+    `;
+    
+    const btnCapturar = document.createElement('button');
+    btnCapturar.innerHTML = '📷 Capturar Foto';
+    btnCapturar.style.cssText = `
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        flex: 1;
+    `;
+    btnCapturar.onclick = capturarFotoEtiqueta;
+    
+    const btnCancelar = document.createElement('button');
+    btnCancelar.innerHTML = '❌ Cancelar';
+    btnCancelar.style.cssText = `
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        flex: 1;
+    `;
+    btnCancelar.onclick = cancelarCapturaEtiqueta;
+    
+    botonesDiv.appendChild(btnCapturar);
+    botonesDiv.appendChild(btnCancelar);
+    
+    readerDiv.appendChild(botonesDiv);
+}
+
+async function capturarFotoEtiqueta() {
+    if (!videoElement || !canvasElement) return;
+    
+    try {
+        console.log('📸 Capturando foto...');
+        
+        const context = canvasElement.getContext('2d');
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+        context.drawImage(videoElement, 0, 0);
+        
+        canvasElement.toBlob(async (blob) => {
+            await procesarFotoEtiqueta(blob);
+        }, 'image/jpeg', 0.95);
+        
+    } catch (error) {
+        console.error('❌ Error capturando foto:', error);
+        alert('⚠️ Error al capturar la foto');
+    }
+}
+
+async function procesarFotoEtiqueta(fotoBlob) {
+    try {
+        console.log('🔄 Procesando foto con OCR...');
+        
+        mostrarLoading('Analizando etiqueta nutricional...');
+        
+        if (!ocrWorker) {
+            inicializarOCR();
+            // Esperar a que se inicialice
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        if (!ocrWorker) {
+            ocultarLoading();
+            alert('⚠️ Error al cargar OCR. Intenta de nuevo.');
+            return;
+        }
+        
+        const { data: { text } } = await ocrWorker.recognize(fotoBlob);
+        console.log('📝 Texto detectado:', text);
+
+        const datosNutricionales = extraerDatosNutricionales(text);
+        
+        ocultarLoading();
+        
+        if (datosNutricionales && datosNutricionales.detectado) {
+            mostrarVerificacionDatos(datosNutricionales);
+        } else {
+            alert('⚠️ No se pudieron detectar datos nutricionales.\n\nIntenta con una foto más clara.');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error procesando foto:', error);
+        ocultarLoading();
+        alert('⚠️ Error al procesar la foto');
+    }
+}
+
+function extraerDatosNutricionales(texto) {
+    const textoLimpio = texto.toLowerCase().replace(/\n/g, ' ');
+    
+    console.log('🔍 Extrayendo datos del texto...');
+
+    const regexCalorias = /(\d+(?:[.,]\d+)?)\s*(?:kcal|cal|kilocalorías?)/i;
+    const regexProteinas = /proteí?nas?:?\s*(\d+(?:[.,]\d+)?)\s*g/i;
+    const regexCarbohidratos = /carbohidratos?|carbs?:?\s*(\d+(?:[.,]\d+)?)\s*g/i;
+    const regexGrasas = /grasas?:?\s*(\d+(?:[.,]\d+)?)\s*g/i;
+    const regexPorcion = /(?:porción|ración|servicio).*?(\d+(?:[.,]\d+)?)\s*(?:g|ml|gramos?)/i;
+
+    const calorias = extraerValor(texto, regexCalorias);
+    const proteinas = extraerValor(texto, regexProteinas);
+    const carbohidratos = extraerValor(texto, regexCarbohidratos);
+    const grasas = extraerValor(texto, regexGrasas);
+    const porcion = extraerValor(texto, regexPorcion) || 100;
+
+    console.log('📊 Datos extraídos:');
+    console.log(`- Calorías: ${calorias}`);
+    console.log(`- Proteínas: ${proteinas}`);
+    console.log(`- Carbohidratos: ${carbohidratos}`);
+    console.log(`- Grasas: ${grasas}`);
+    console.log(`- Porción: ${porcion}g`);
+
+    return {
+        calorias: calorias,
+        proteinas: proteinas,
+        carbohidratos: carbohidratos,
+        grasas: grasas,
+        porcion: porcion,
+        detectado: calorias > 0
+    };
+}
+
+function extraerValor(texto, regex) {
+    const match = texto.match(regex);
+    if (match && match[1]) {
+        let valor = match[1].replace(',', '.');
+        return parseFloat(valor) || 0;
+    }
+    return 0;
+}
+
+function mostrarVerificacionDatos(datosDetectados) {
+    const readerDiv = document.getElementById('reader');
+    
+    if (videoElement && videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => track.stop());
+    }
+    
+    readerDiv.innerHTML = `
+        
+            📋 Verifica los datos detectados:
+            
+            
+                <label>Nombre del producto:</label>
+                <input>
+            
+            
+            
+                <label>Calorías (por porción de ${datosDetectados.porcion}g):
+                <input>
+            
+            
+            
+                <label>Proteínas (g):
+                <input>
+            
+            
+            
+                <label>Carbohidratos (g):
+                <input>
+            
+            
+            
+                <label>Grasas (g):
+                <input>
+            
+            
+            
+                <label>Tamaño de porción (g):
+                <input>
+            
+            
+            
+                <button>
+                    ✅ Confirmar y Usar
+                </button>
+                <button>
+                    🔄 Recapturar
+                
+            
+        
+    `;
+    
+    capturaActiva = false;
+}
+
+function confirmarDatosOCR() {
+    const nombre = document.getElementById('ocr-nombre').value.trim();
+    const calorias = parseFloat(document.getElementById('ocr-calorias').value) || 0;
+    const proteinas = parseFloat(document.getElementById('ocr-proteinas').value) || 0;
+    const carbohidratos = parseFloat(document.getElementById('ocr-carbohidratos').value) || 0;
+    const grasas = parseFloat(document.getElementById('ocr-grasas').value) || 0;
+    const porcion = parseFloat(document.getElementById('ocr-porcion').value) || 100;
+
+    if (!nombre) {
+        alert('⚠️ Por favor ingresa el nombre del producto');
+        return;
+    }
+
+    if (calorias === 0) {
+        alert('⚠️ Las calorías deben ser mayor a 0');
+        return;
+    }
+
+    const factorConversion = 100 / porcion;
+    const caloriasPor100 = calorias * factorConversion;
+    const proteinasPor100 = proteinas * factorConversion;
+    const carbosPor100 = carbohidratos * factorConversion;
+    const grasasPor100 = grasas * factorConversion;
+
+    const nuevoAlimento = {
+        nombre: nombre,
+        cal: Math.round(caloriasPor100 * 10) / 10,
+        pro: Math.round(proteinasPor100 * 10) / 10,
+        carb: Math.round(carbosPor100 * 10) / 10,
+        grasa: Math.round(grasasPor100 * 10) / 10,
+        origen: 'OCR',
+        fechaAgregado: new Date().toLocaleDateString('es-ES')
+    };
+
+    console.log('✅ Nuevo alimento creado:', nuevoAlimento);
+
+    agregarNuevoAlimentoABaseDatos(nuevoAlimento);
+
+    alimentoSeleccionado = nuevoAlimento;
+    document.getElementById('alimento-seleccionado-nombre').innerText = nuevoAlimento.nombre;
+    document.getElementById('input-gramos').value = 100;
+    
+    document.getElementById('search-screen').classList.remove('active');
+    document.getElementById('detail-screen').classList.add('active');
+    calcularMacrosDetalle();
+    
+    alert(`✅ ¡Alimento "${nuevoAlimento.nombre}" agregado a tu base de datos!`);
+}
+
+function agregarNuevoAlimentoABaseDatos(alimento) {
+    const existe = baseDeDatosAlimentos.find(a => 
+        a.nombre.toLowerCase() === alimento.nombre.toLowerCase()
+    );
+
+    if (!existe) {
+        baseDeDatosAlimentos.push(alimento);
+        console.log(`✅ Alimento "${alimento.nombre}" agregado a la base de datos`);
+        
+        let alimentosCustom = JSON.parse(localStorage.getItem('alimentosCustom') || '[]');
+        alimentosCustom.push(alimento);
+        localStorage.setItem('alimentosCustom', JSON.stringify(alimentosCustom));
+    } else {
+        console.log(`ℹ️ El alimento "${alimento.nombre}" ya existe`);
+    }
+}
+
+function cancelarCapturaEtiqueta() {
+    console.log('❌ Captura cancelada');
+    
+    if (videoElement && videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => track.stop());
+    }
+    
+    const readerDiv = document.getElementById('reader');
+    readerDiv.innerHTML = '';
+    readerDiv.style.background = 'transparent';
+    
+    const btnEscaner = document.getElementById('btn-escaner');
+    const btnDetener = document.getElementById('btn-detener-escaner');
+    if (btnEscaner) btnEscaner.style.display = 'block';
+    if (btnDetener) btnDetener.style.display = 'none';
+    
+    capturaActiva = false;
+}
+
+function mostrarLoading(mensaje) {
+    const readerDiv = document.getElementById('reader');
+    readerDiv.innerHTML = `
+        
+            ⏳
+            ${mensaje}
+            Esto puede tardar unos segundos...
+        
+    `;
+}
+
+function ocultarLoading() {
+    // Ya se reemplaza con otro contenido
 }
 
 // ============================================================
 // INICIALIZACIÓN DE LA APP
 // ============================================================
 
-/**
- * Ejecutar cuando carga la página
- */
 window.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 App cargando...');
+    cargarAlimentosPersonalizados();
     cargarDatos();
+    inicializarOCR();
     console.log('✅ App lista para usar');
 });
 
-// Detectar cambios en los inputs de gramos en tiempo real
 document.addEventListener('DOMContentLoaded', function() {
     const inputGramos = document.getElementById('input-gramos');
     if (inputGramos) {
